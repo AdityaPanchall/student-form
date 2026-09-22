@@ -1,0 +1,142 @@
+services:
+
+  # =========================
+  # LOAD BALANCER
+  # =========================
+  haproxy:
+    image: haproxy:3.2
+    container_name: student-haproxy
+
+    ports:
+      - "80:80"
+      - "8404:8404"
+
+    volumes:
+      - ./docker/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+
+    depends_on:
+      - backend-1
+      - backend-2
+
+    networks:
+      - frontend-network
+      - backend-network
+
+    restart: unless-stopped
+
+
+  # =========================
+  # FRONTEND / WEB SERVER
+  # =========================
+  nginx:
+    image: nginx:1.29
+    container_name: student-nginx
+
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+    expose:
+      - "80"
+
+    networks:
+      - frontend-network
+
+    restart: unless-stopped
+
+
+  # =========================
+  # BACKEND 1
+  # =========================
+  backend-1:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+
+    container_name: student-backend-1
+
+    environment:
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+    expose:
+      - "8080"
+
+    depends_on:
+      - postgres
+
+    networks:
+      - backend-network
+
+    restart: unless-stopped
+
+
+  # =========================
+  # BACKEND 2
+  # =========================
+  backend-2:
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+
+    container_name: student-backend-2
+
+    environment:
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+    expose:
+      - "8080"
+
+    depends_on:
+      - postgres
+
+    networks:
+      - backend-network
+
+    restart: unless-stopped
+
+
+  # =========================
+  # DATABASE
+  # =========================
+  postgres:
+    image: postgres:16
+    container_name: student-postgres
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database.sql:/docker-entrypoint-initdb.d/database.sql:ro
+
+    networks:
+      - backend-network
+
+    restart: unless-stopped
+
+
+# =========================
+# VOLUMES
+# =========================
+volumes:
+  postgres-data:
+
+
+# =========================
+# NETWORKS
+# =========================
+networks:
+
+  frontend-network:
+    driver: bridge
+
+  backend-network:
+    driver: bridge
