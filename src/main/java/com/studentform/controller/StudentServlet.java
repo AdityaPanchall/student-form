@@ -92,12 +92,38 @@ public class StudentServlet extends HttpServlet {
                             + "/form?status=success"
             );
 
-        } catch (Exception e) {
+        } 
+        // catch (Exception e) {
 
-            response.sendRedirect(
-                    request.getContextPath()
-                            + "/form?status=error"
-            );
-        }
+        //     response.sendRedirect(
+        //             request.getContextPath()
+        //                     + "/form?status=error"
+        //     );
+        // }
+
+//         catch (Exception e) {
+
+//     e.printStackTrace();
+
+//     response.sendRedirect(
+//             request.getContextPath()
+//                     + "/form?status=error"
+//     );
+// }
+
+catch (Exception e) {
+    e.printStackTrace();
+    response.setContentType("text/plain");
+    response.setStatus(500);
+    java.io.PrintWriter writer = response.getWriter();
+    writer.println("ERROR: " + e);
+    Throwable cause = e.getCause();
+    while (cause != null) {
+        writer.println("Caused by: " + cause);
+        cause = cause.getCause();
+    }
+    e.printStackTrace(writer);
+}
     }
 }
+

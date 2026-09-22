@@ -10,6 +10,28 @@ import java.sql.SQLException;
 
 public class JdbcStudentRepository implements StudentRepository {
 
+    static {
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
+
+    private static final String CREATE_TABLE_SQL = """
+            CREATE TABLE IF NOT EXISTS "formDetails" (
+                id SERIAL PRIMARY KEY,
+                "firstName" VARCHAR(100) NOT NULL,
+                "lastName" VARCHAR(100) NOT NULL,
+                dob DATE NOT NULL,
+                gender VARCHAR(20) NOT NULL,
+                highestqualification VARCHAR(100) NOT NULL,
+                year_of_passing INTEGER NOT NULL,
+                mobilenumber VARCHAR(15) NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """;
+
     private static final String INSERT_SQL = """
             INSERT INTO "formDetails"
             (
@@ -27,56 +49,55 @@ public class JdbcStudentRepository implements StudentRepository {
     @Override
     public void save(Student student) {
 
-        try (
-                Connection connection =
-                        DriverManager.getConnection(
-                                DatabaseConfig.getUrl(),
-                                DatabaseConfig.getUsername(),
-                                DatabaseConfig.getPassword()
-                        );
+        try (Connection connection = DriverManager.getConnection(
+                DatabaseConfig.getUrl(),
+                DatabaseConfig.getUsername(),
+                DatabaseConfig.getPassword())) {
 
-                PreparedStatement statement =
-                        connection.prepareStatement(INSERT_SQL)
-        ) {
+            ensureTableExists(connection);
 
-            statement.setString(
-                    1,
-                    student.getFirstName()
-            );
+            try (PreparedStatement statement =
+                         connection.prepareStatement(INSERT_SQL)) {
 
-            statement.setString(
-                    2,
-                    student.getLastName()
-            );
+                statement.setString(
+                        1,
+                        student.getFirstName()
+                );
 
-            statement.setDate(
-                    3,
-                    java.sql.Date.valueOf(
-                            student.getDob()
-                    )
-            );
+                statement.setString(
+                        2,
+                        student.getLastName()
+                );
 
-            statement.setString(
-                    4,
-                    student.getGender()
-            );
+                statement.setDate(
+                        3,
+                        java.sql.Date.valueOf(
+                                student.getDob()
+                        )
+                );
 
-            statement.setString(
-                    5,
-                    student.getHighestQualification()
-            );
+                statement.setString(
+                        4,
+                        student.getGender()
+                );
 
-            statement.setInt(
-                    6,
-                    student.getYearOfPassing()
-            );
+                statement.setString(
+                        5,
+                        student.getHighestQualification()
+                );
 
-            statement.setString(
-                    7,
-                    student.getMobileNumber()
-            );
+                statement.setInt(
+                        6,
+                        student.getYearOfPassing()
+                );
 
-            statement.executeUpdate();
+                statement.setString(
+                        7,
+                        student.getMobileNumber()
+                );
+
+                statement.executeUpdate();
+            }
 
         } catch (SQLException e) {
 
@@ -84,6 +105,12 @@ public class JdbcStudentRepository implements StudentRepository {
                     "Unable to save student details.",
                     e
             );
+        }
+    }
+
+    private void ensureTableExists(Connection connection) throws SQLException {
+        try (java.sql.Statement statement = connection.createStatement()) {
+            statement.executeUpdate(CREATE_TABLE_SQL);
         }
     }
 }
